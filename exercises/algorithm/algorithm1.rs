@@ -2,11 +2,8 @@
 	single linked list merge
 	This problem requires you to merge two ordered singly linked lists into one ordered singly linked list
 */
-// I AM NOT DONE
-
 use std::fmt::{self, Display, Formatter};
 use std::ptr::NonNull;
-use std::vec::*;
 
 #[derive(Debug)]
 struct Node<T> {
@@ -69,15 +66,67 @@ impl<T> LinkedList<T> {
             },
         }
     }
-	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
-	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
+
+    fn pop_front_node(&mut self) -> Option<NonNull<Node<T>>> {
+        let node_ptr = self.start?;
+
+        unsafe {
+            self.start = (*node_ptr.as_ptr()).next;
+            (*node_ptr.as_ptr()).next = None;
         }
-	}
+        self.length -= 1;
+        if self.start.is_none() {
+            self.end = None;
+        }
+
+        Some(node_ptr)
+    }
+
+    fn push_node(&mut self, node_ptr: NonNull<Node<T>>) {
+        let node_ptr = Some(node_ptr);
+        match self.end {
+            None => self.start = node_ptr,
+            Some(end_ptr) => unsafe { (*end_ptr.as_ptr()).next = node_ptr },
+        }
+        self.end = node_ptr;
+        self.length += 1;
+    }
+
+    pub fn merge(mut list_a: LinkedList<T>, mut list_b: LinkedList<T>) -> Self
+    where
+        T: PartialOrd,
+    {
+        let mut merged = Self::new();
+
+        while let (Some(node_a), Some(node_b)) = (list_a.start, list_b.start) {
+            let take_a = unsafe { node_a.as_ref().val <= node_b.as_ref().val };
+            let node = if take_a {
+                list_a.pop_front_node().unwrap()
+            } else {
+                list_b.pop_front_node().unwrap()
+            };
+            merged.push_node(node);
+        }
+
+        while let Some(node) = list_a.pop_front_node() {
+            merged.push_node(node);
+        }
+        while let Some(node) = list_b.pop_front_node() {
+            merged.push_node(node);
+        }
+
+        merged
+    }
+}
+
+impl<T> Drop for LinkedList<T> {
+    fn drop(&mut self) {
+        while let Some(node_ptr) = self.pop_front_node() {
+            unsafe {
+                drop(Box::from_raw(node_ptr.as_ptr()));
+            }
+        }
+    }
 }
 
 impl<T> Display for LinkedList<T>
