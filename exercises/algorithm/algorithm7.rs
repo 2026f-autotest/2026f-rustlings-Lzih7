@@ -3,7 +3,6 @@
 	This question requires you to use a stack to achieve a bracket match
 */
 
-// I AM NOT DONE
 #[derive(Debug)]
 struct Stack<T> {
 	size: usize,
@@ -31,8 +30,9 @@ impl<T> Stack<T> {
 		self.size += 1;
 	}
 	fn pop(&mut self) -> Option<T> {
-		// TODO
-		None
+		let value = self.data.pop()?;
+		self.size -= 1;
+		Some(value)
 	}
 	fn peek(&self) -> Option<&T> {
 		if 0 == self.size {
@@ -49,7 +49,7 @@ impl<T> Stack<T> {
 	fn into_iter(self) -> IntoIter<T> {
 		IntoIter(self)
 	}
-	fn iter(&self) -> Iter<T> {
+	fn iter(&self) -> Iter<'_, T> {
 		let mut iterator = Iter { 
 			stack: Vec::new() 
 		};
@@ -58,7 +58,7 @@ impl<T> Stack<T> {
 		}
 		iterator
 	}
-	fn iter_mut(&mut self) -> IterMut<T> {
+	fn iter_mut(&mut self) -> IterMut<'_, T> {
 		let mut iterator = IterMut { 
 			stack: Vec::new() 
 		};
@@ -101,8 +101,24 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
 fn bracket_match(bracket: &str) -> bool
 {
-	//TODO
-	true
+	let mut stack = Stack::new();
+	for ch in bracket.chars() {
+		match ch {
+			'(' | '[' | '{' => stack.push(ch),
+			')' | ']' | '}' => {
+				let expected = match ch {
+					')' => '(',
+					']' => '[',
+					_ => '{',
+				};
+				if stack.pop() != Some(expected) {
+					return false;
+				}
+			}
+			_ => {}
+		}
+	}
+	stack.is_empty()
 }
 
 #[cfg(test)]
